@@ -1,0 +1,25 @@
+{
+  "presets": [
+    "next/babel"
+  ],
+  "plugins": [
+    ["@babel/plugin-proposal-decorators", { "legacy": true }],
+    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-proposal-object-rest-spread",
+    "@babel/plugin-proposal-do-expressions",
+    ["prismjs", {
+      "languages": [
+        "css",
+        "html",
+        "javascript"
+      ],
+      "plugins": [
+        "line-numbers",
+        "normalize-whitespace",
+        "show-language"
+      ],
+      "theme": "tomorrow",
+      "css": true
+    }]
+  ]
+}
