@@ -12,7 +12,7 @@ import '../scss/app.scss'
 // Module imports
 import { library as faLibrary, config as faConfig } from '@fortawesome/fontawesome-svg-core'
 import { Provider } from 'react-redux'
-import NextApp, { Container } from 'next/app'
+import NextApp from 'next/app'
 import LocalForage from 'localforage'
 import React from 'react'
 import withRedux from 'next-redux-wrapper'
@@ -64,11 +64,9 @@ class App extends NextApp {
     } = this.props
 
     return (
-      <Container>
-        <Provider store={store}>
-          <AppLayout {...layoutProps} />
-        </Provider>
-      </Container>
+      <Provider store={store}>
+        <AppLayout {...layoutProps} />
+      </Provider>
     )
   }
 }
