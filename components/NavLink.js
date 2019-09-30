@@ -17,7 +17,7 @@ import ExternalLink from './ExternalLink'
 
 
 // Local constants
-const allowedLinkKeys = ['href', 'params', 'route', 'target']
+const allowedLinkKeys = ['href', 'params', 'target']
 
 
 
