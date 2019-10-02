@@ -12,6 +12,7 @@ import {
   firebase,
   firebaseApp,
 } from '../helpers/firebase'
+import { Map } from './Map'
 import getSprite from '../helpers/getSprite'
 
 
@@ -35,6 +36,7 @@ class Game {
   database = null
   keysPressed = {}
   mainCanvas = null
+  currentMap = null
   isReady = false
   unsubscribes = []
 
@@ -215,13 +217,7 @@ class Game {
 
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
-    sortedCharacters.forEach(characterData => {
-      context.font = '1em serif'
-      context.fillStyle = 'red'
-      context.fillText(
-        characterData.name.substring(0, 20),
-        Math.floor(characterData.x),
-        Math.floor(characterData.y - 5),
+    context.drawImage(
       )
 
       if (!characterData.isLoading) {
@@ -281,6 +277,8 @@ class Game {
     const {
       canvasElement,
       characterID,
+      mapPath,
+      mapName,
       start = true,
     } = options
 
@@ -289,6 +287,12 @@ class Game {
 
     this._bindEventListeners()
     await this._bindFirebaseListeners()
+
+    this.currentMap = new Map({
+      mapPath,
+      mapName,
+    })
+    this.currentMap.initialize()
 
     if (start) {
       this.start()

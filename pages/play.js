@@ -48,6 +48,8 @@ const Play = ({ characterID }) => {
         await game.initialize({
           canvasElement: canvasElement.current,
           characterID,
+          mapName: 'dungeon',
+          mapPath: '/game/tiles/dungeon',
         })
 
         setGameIsReady(true)
