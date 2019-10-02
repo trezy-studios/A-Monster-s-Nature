@@ -1,8 +1,63 @@
 [role=banner] {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-color: var(--black);
+  border-style: solid;
+  border-width: 0;
+  border-bottom-width: 0.4rem;
+  border-top-width: 0.4rem;
   display: flex;
-  position: sticky;
+  padding-left: calc(50% - 50rem);
+  padding-right: calc(50% - 50rem);
+  position: fixed;
   left: 0;
   right: 0;
-  top: 0;
+  top: 5rem;
   width: 100vw;
+  z-index: 1;
+
+  menu {
+    margin-left: auto;
+  }
+
+  a, button, .button {
+    &:not(.brand-link) {
+      align-items: center;
+      color: inherit;
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+      padding: 0;
+      padding-left: var(--gutter);
+      padding-right: var(--gutter);
+      position: relative;
+      text-decoration: none;
+      transition-duration: 0.2s;
+      transition-property: all;
+      width: 100%;
+
+      [data-icon] {
+        margin-right: 1rem;
+      }
+
+      &:after {
+        background-color: white;
+        border-radius: 0;
+        bottom: 0;
+        content: '';
+        height: 0.5rem;
+        left: 0;
+        position: absolute;
+        right: 0;
+        transform: translateY(100%);
+        transition-duration: 0.2s;
+        transition-property: all;
+      }
+
+      &:hover:after {
+        border-top-left-radius: 100%;
+        border-top-right-radius: 100%;
+        transform: translateY(0);
+      }
+    }
+  }
 }

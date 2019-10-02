@@ -97,7 +97,7 @@ class AppLayout extends React.Component {
       <div role="application">
         <NextHead>
           <link
-            href="https://fonts.googleapis.com/css?family=Source+Code+Pro&amp;display=swap"
+            href="https://fonts.googleapis.com/css?family=Cinzel|Cinzel+Decorative|Cormorant&amp;display=swap"
             rel="stylesheet" />
         </NextHead>
 

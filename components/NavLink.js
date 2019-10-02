@@ -102,9 +102,10 @@ const NavLink = props => {
           iconic: iconOnly,
         })}
         tabIndex={isFocusable ? null : '-1'}>
-        {iconComponent}
-
-        {titleComponent}
+        <span>
+          {iconComponent}
+          {titleComponent}
+        </span>
       </ExternalLink>
     )
   }
@@ -118,9 +119,10 @@ const NavLink = props => {
           iconic: iconOnly,
         })}
         tabIndex={isFocusable ? null : '-1'}> {/* eslint-disable-line jsx-a11y/no-noninteractive-tabindex */}
-        {iconComponent}
-
-        {titleComponent}
+        <span>
+          {iconComponent}
+          {titleComponent}
+        </span>
       </a>
     </Link>
   )

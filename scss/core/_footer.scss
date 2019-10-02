@@ -1,7 +1,7 @@
 footer {
-  bottom: 0;
-  left: 0;
-  position: sticky;
-  right: 0;
+  background-color: var(--black);
+  padding: var(--gutter);
+  padding-left: calc(50% - 50rem);
+  padding-right: calc(50% - 50rem);
   width: 100vw;
 }

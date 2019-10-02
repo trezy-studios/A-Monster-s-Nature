@@ -16,7 +16,11 @@ export default function currentUserReducer (state = initialState.currentUserID, 
     case actionTypes.GET_CURRENT_USER:
       switch (status) {
         case 'success':
-          return payload.uid
+          if (payload) {
+            return payload.uid
+          }
+
+          return null
 
         default:
           return state

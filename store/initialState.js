@@ -1,4 +1,6 @@
 const initialState = {
+  initialAuthStateChecked: false,
+
   currentUserID: null,
 
   game: {

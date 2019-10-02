@@ -96,7 +96,9 @@ class Document extends NextDocument {
         "'self'",
         'https://fonts.googleapis.com',
       ],
-      media: [],
+      media: [
+        "'self'",
+      ],
       object: [],
       script: [
         "'self'",

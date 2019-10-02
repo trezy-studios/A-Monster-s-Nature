@@ -1,0 +1,28 @@
+button, .button {
+  background-color: var(--transparent);
+  border-color: var(--transparent);
+  border-style: solid;
+  border-width: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  padding: var(--gutter) calc(var(--gutter) * 2);
+  text-decoration: none;
+  transition-duration: 0.2s;
+  transition-property: background-color;
+  width: auto;
+
+  &:hover {
+    background-color: white;
+    color: black;
+  }
+
+  &.primary {
+    background-color: white;
+    color: black;
+    border-color: white;
+    border-width: 0;
+  }
+}

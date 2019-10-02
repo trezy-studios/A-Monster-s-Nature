@@ -1,0 +1,10 @@
+a {
+  color: inherit;
+  text-decoration-color: var(--dim-white);
+  transition-duration: 0.2s;
+  transition-property: text-decoration-color;
+
+  &:hover {
+    text-decoration-color: var(--white);
+  }
+}

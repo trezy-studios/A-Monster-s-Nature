@@ -1,6 +1,12 @@
 [role=application] {
   align-content: stretch;
+  background-color: var(--dark-grey);
+  color: var(--white);
   display: flex;
   flex-direction: column;
+  font-family: Cormorant, serif;
+  font-size: 18px;
+  line-height: 1.5;
   min-height: 100vh;
+  text-shadow: 0 0 0.5rem var(--black);
 }

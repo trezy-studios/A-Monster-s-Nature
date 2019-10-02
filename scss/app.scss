@@ -23,9 +23,16 @@
 
 @import 'core/root';
 
+@import 'core/a';
 @import 'core/application';
+@import 'core/button';
+@import 'core/em';
 @import 'core/footer';
+@import 'core/headings';
 @import 'core/main';
+@import 'core/nav';
+@import 'core/p';
+@import 'core/section';
 
 
 
@@ -36,6 +43,8 @@
 \******************************************************************************/
 
 @import 'components/banner';
+@import 'components/brand';
+@import 'components/hero';
 
 
 
@@ -44,6 +53,8 @@
 /******************************************************************************\
   Pages
 \******************************************************************************/
+
+@import 'pages/game';
 
 
 

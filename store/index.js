@@ -12,30 +12,49 @@ import thunkMiddleware from 'redux-thunk'
 
 
 
-// Component imports
+// Local imports
+import {
+  // firebase,
+  firebaseApp,
+} from '../helpers/firebase'
+import * as gameActions from './actions/game'
+import * as usersActions from './actions/users'
+import actionTypes from './actionTypes'
 import initialState from './initialState'
 import reducer from './reducers'
 
 
 
-// Action imports
-import * as gameActions from './actions/game'
-import * as usersActions from './actions/users'
 
 
-
-
+let store = null
 
 const actions = {
   ...gameActions,
   ...usersActions,
 }
 
+const initStore = (state = initialState) => {
+  if (!store) {
+    store = createStore(reducer, state, composeWithDevTools(applyMiddleware(thunkMiddleware)))
 
+    if (typeof window !== 'undefined') {
+      const { dispatch } = store
 
+      const firebaseAppAuth = firebaseApp.auth()
 
+      firebaseAppAuth.onAuthStateChanged(user => {
+        dispatch({
+          payload: user,
+          status: 'success',
+          type: actionTypes.GET_CURRENT_USER,
+        })
+      })
+    }
+  }
 
-const initStore = (state = initialState) => createStore(reducer, state, composeWithDevTools(applyMiddleware(thunkMiddleware)))
+  return store
+}
 
 
 
@@ -96,6 +115,7 @@ const getActionCreators = (action, dispatch) => {
 
 export {
   actions,
+  actionTypes,
   getActionCreators,
   connectDecorator as connect,
   initStore,
