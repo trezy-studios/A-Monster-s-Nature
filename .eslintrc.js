@@ -7,6 +7,9 @@ module.exports = {
     'new-parens': ['error', 'never'],
     'semi-style': ['off'],
 
+    // import
+    'import/prefer-default-export': ['off'],
+
     // jsx-a11y
     'jsx-a11y/control-has-associated-label': ['off'],
 
