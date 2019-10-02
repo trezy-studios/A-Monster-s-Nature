@@ -213,13 +213,27 @@ class Game {
 
   _render = () => {
     const context = this.mainCanvas.getContext('2d')
+    const myCharacter = this.characters[this.currentCharacterID]
     const sortedCharacters = Object.values(this.characters).sort((a, b) => ((a.y > b.y) ? 1 : -1))
+
+    const offsetX = myCharacter.x
+    const offsetY = myCharacter.y
 
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
     context.drawImage(
-      )
+      this.currentMap.offscreenCanvas,
+      offsetX,
+      offsetY,
+      context.canvas.width,
+      context.canvas.height,
+      0,
+      0,
+      context.canvas.width,
+      context.canvas.height,
+    )
 
+    sortedCharacters.forEach(characterData => {
       if (!characterData.isLoading) {
         let sourceOffsetY = (characterData.gender === 'male') ? 0 : characterSpriteSize * 5
 
@@ -246,14 +260,34 @@ class Game {
           characterData.currentFrame += 1
         }
 
+        let destinationX = null
+        let destinationY = null
+
+        if (characterData.id === this.currentCharacterID) {
+          const halfCharacterSpriteSize = characterSpriteSize / 2
+          destinationX = (context.canvas.width / 2) - halfCharacterSpriteSize
+          destinationY = (context.canvas.height / 2) - halfCharacterSpriteSize
+        } else {
+          destinationX = Math.floor(characterData.x + offsetX)
+          destinationY = Math.floor(characterData.y + offsetY)
+        }
+
+        context.font = '1em serif'
+        context.fillStyle = 'white'
+        context.textAlign = 'center'
+        context.fillText(
+          characterData.name.substring(0, 20),
+          context.canvas.width / 2,
+          destinationY - 10,
+        )
         context.drawImage(
           characterData.sprite.container,
           sourceOffsetX,
           sourceOffsetY,
           characterSpriteSize,
           characterSpriteSize,
-          Math.floor(characterData.x),
-          Math.floor(characterData.y),
+          destinationX,
+          destinationY,
           characterSpriteSize,
           characterSpriteSize,
         )
