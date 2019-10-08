@@ -31,14 +31,33 @@ const moveSpeed = 5
 
 
 class Game {
+  /***************************************************************************\
+    Local Properties
+  \***************************************************************************/
+
   characters = {}
+
   currentCharacterID = null
+
   database = null
+
   keysPressed = {}
+
   mainCanvas = null
+
   currentMap = null
+
   isReady = false
+
   unsubscribes = []
+
+
+
+
+
+  /***************************************************************************\
+    Private Methods
+  \***************************************************************************/
 
   _bindEventListeners () {
     window.addEventListener('keydown', this._handleKeydownEvent)
@@ -216,8 +235,12 @@ class Game {
     const myCharacter = this.characters[this.currentCharacterID]
     const sortedCharacters = Object.values(this.characters).sort((a, b) => ((a.y > b.y) ? 1 : -1))
 
-    const offsetX = myCharacter.x
-    const offsetY = myCharacter.y
+    const halfCanvasHeight = context.canvas.height / 2
+    const halfCanvasWidth = context.canvas.width / 2
+    const halfCharacterSpriteSize = characterSpriteSize / 2
+
+    const offsetX = myCharacter.x - halfCanvasWidth
+    const offsetY = myCharacter.y - halfCanvasHeight
 
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
@@ -264,12 +287,11 @@ class Game {
         let destinationY = null
 
         if (characterData.id === this.currentCharacterID) {
-          const halfCharacterSpriteSize = characterSpriteSize / 2
-          destinationX = (context.canvas.width / 2) - halfCharacterSpriteSize
-          destinationY = (context.canvas.height / 2) - halfCharacterSpriteSize
+          destinationX = halfCanvasWidth - halfCharacterSpriteSize
+          destinationY = halfCanvasHeight - halfCharacterSpriteSize
         } else {
-          destinationX = Math.floor(characterData.x + offsetX)
-          destinationY = Math.floor(characterData.y + offsetY)
+          destinationX = (characterData.x - offsetX) - halfCharacterSpriteSize
+          destinationY = (characterData.y - offsetY) - halfCharacterSpriteSize
         }
 
         context.font = '1em serif'
@@ -277,7 +299,7 @@ class Game {
         context.textAlign = 'center'
         context.fillText(
           characterData.name.substring(0, 20),
-          context.canvas.width / 2,
+          destinationX + halfCharacterSpriteSize,
           destinationY - 10,
         )
         context.drawImage(
@@ -302,6 +324,14 @@ class Game {
   _teardown = () => {
     this.unsubscribes.forEach(unsubscribe => unsubscribe())
   }
+
+
+
+
+
+  /***************************************************************************\
+    Public Methods
+  \***************************************************************************/
 
   constructor (options) {
     this.options = options
