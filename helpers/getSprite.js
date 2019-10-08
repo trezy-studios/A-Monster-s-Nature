@@ -11,6 +11,7 @@ const getSprite = async (type, name) => {
 
   if (!sprite) {
     const container = new Image
+    const promises = []
 
     sprite = {
       container,
@@ -19,7 +20,9 @@ const getSprite = async (type, name) => {
 
     sprites[type] = sprite
 
-    await new Promise((resolve, reject) => {
+    promises.push(fetch(`/game/${spritePath}.json`))
+
+    promises.push(new Promise((resolve, reject) => {
       container.onerror = reject
 
       container.onload = () => {
@@ -28,7 +31,15 @@ const getSprite = async (type, name) => {
       }
 
       container.src = `/game/${spritePath}.png`
-    })
+    }))
+
+    const [spriteDataResult] = await Promise.all(promises)
+    const spriteData = await spriteDataResult.json()
+
+    sprites[type] = {
+      ...sprite,
+      ...spriteData,
+    }
   }
 
   return sprite
