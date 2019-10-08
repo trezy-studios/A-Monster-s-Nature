@@ -55,6 +55,7 @@ const Play = ({ characterID }) => {
         setGameIsReady(true)
       })()
     }
+    return game.teardown
   }, [])
 
   return (

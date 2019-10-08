@@ -321,10 +321,6 @@ class Game {
     characterData.isMoving = false
   })
 
-  _teardown = () => {
-    this.unsubscribes.forEach(unsubscribe => unsubscribe())
-  }
-
 
 
 
@@ -365,6 +361,10 @@ class Game {
 
   start = () => {
     this._loop()
+  }
+
+  teardown = () => {
+    this.unsubscribes.forEach(unsubscribe => unsubscribe())
   }
 }
 
