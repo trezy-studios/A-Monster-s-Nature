@@ -20,10 +20,6 @@ import getSprite from '../helpers/getSprite'
 
 
 // Local constants
-const characterSpriteSize = 64
-const framesPerSecond = 20
-const totalFrames = 10
-const framesPerFrame = 60 / framesPerSecond
 const moveSpeed = 5
 
 
@@ -109,10 +105,12 @@ class Game {
               this.characters[characterDoc.id] = {
                 ...characterData,
                 currentFrame: 0,
+                frameDelta: performance.now(),
                 id: characterDoc.id,
                 isLoading: true,
-                isMoving: false,
+                previousState: 'idle',
                 sprite: null,
+                state: 'idle',
               }
 
               const promises = []
@@ -156,18 +154,106 @@ class Game {
 
       if (originalCharacterData) {
         const characterData = characterDoc.val()
+        const isMoving = (originalCharacterData.x !== characterData.x) || (originalCharacterData.y !== characterData.y)
 
         this.characters[characterDoc.key] = {
           ...this.characters[characterDoc.key],
           direction: characterData.direction,
-          isMoving: (originalCharacterData.x !== characterData.x) || (originalCharacterData.y !== characterData.y),
           previousX: originalCharacterData.x,
           previousY: originalCharacterData.y,
+          previousState: originalCharacterData.state,
+          state: isMoving ? 'walk' : 'idle',
           x: characterData.x,
           y: characterData.y,
         }
       }
     }))
+  }
+
+  _drawCharacter = (characterData, offset, context) => {
+    if (!characterData.isLoading) {
+      const { sprite } = characterData
+      const characterSpriteHeight = sprite.meta.sprite.size.height
+      const characterSpriteWidth = sprite.meta.sprite.size.height
+      const halfCanvasHeight = context.canvas.height / 2
+      const halfCanvasWidth = context.canvas.width / 2
+      const halfCharacterSpriteHeight = characterSpriteHeight / 2
+      const halfCharacterSpriteWidth = characterSpriteWidth / 2
+      let spriteChunkName = characterData.gender
+
+      if (characterData.direction === 'left') {
+        spriteChunkName += '-flipped'
+      }
+
+      const currentTag = sprite.tags.find(({ name }) => name === characterData.state)
+      const spriteChunk = sprite.chunks.find(({ name }) => name === spriteChunkName)
+      const sourceOffsetY = spriteChunk.offset.y + currentTag.offset.y
+      const currentFrame = sprite.frames[characterData.currentFrame]
+      const currentFrameIsLastFrame = (characterData.currentFrame === currentTag.frames[currentTag.length - 1])
+      const stateHasChanged = (characterData.state !== characterData.previousState)
+
+      const now = performance.now()
+
+
+      if (stateHasChanged) {
+        characterData.currentFrame = currentTag.frames[0]
+      } else if ((now - characterData.frameDelta) > currentFrame.duration) {
+        characterData.frameDelta = now
+
+        if (currentFrameIsLastFrame) {
+          characterData.currentFrame = currentTag.frames[0]
+        } else if (Math.random() > 0.5) {
+          characterData.currentFrame += 1
+        }
+      }
+
+      if (characterData.state === 'walk') {
+        const characterXHasChanged = characterData.previousX === characterData.x
+        const characterYHasChanged = characterData.previousY === characterData.y
+
+        if (characterXHasChanged && characterYHasChanged) {
+          this._stopMoving(characterData)
+        }
+
+        characterData.previousX = characterData.x
+        characterData.previousY = characterData.y
+      } else if ((characterData.state === 'idle') && characterData.previousState === 'walk') {
+        characterData.previousState = 'idle'
+      }
+
+      const sourceOffsetX = spriteChunk.offset.x + currentFrame.offset.x
+
+      let destinationX = null
+      let destinationY = null
+
+      if (characterData.id === this.currentCharacterID) {
+        destinationX = halfCanvasWidth - halfCharacterSpriteWidth
+        destinationY = halfCanvasHeight - halfCharacterSpriteHeight
+      } else {
+        destinationX = (characterData.x - offset.x) - halfCharacterSpriteWidth
+        destinationY = (characterData.y - offset.y) - halfCharacterSpriteHeight
+      }
+
+      context.font = '1em Cormorant, serif'
+      context.fillStyle = 'white'
+      context.textAlign = 'center'
+      context.fillText(
+        characterData.name.substring(0, 20),
+        destinationX + halfCharacterSpriteWidth,
+        destinationY - 10,
+      )
+      context.drawImage(
+        characterData.sprite.container,
+        sourceOffsetX,
+        sourceOffsetY,
+        characterSpriteWidth,
+        characterSpriteHeight,
+        destinationX,
+        destinationY,
+        characterSpriteWidth,
+        characterSpriteHeight,
+      )
+    }
   }
 
   _handleKeydownEvent = ({ key }) => {
@@ -237,17 +323,18 @@ class Game {
 
     const halfCanvasHeight = context.canvas.height / 2
     const halfCanvasWidth = context.canvas.width / 2
-    const halfCharacterSpriteSize = characterSpriteSize / 2
 
-    const offsetX = myCharacter.x - halfCanvasWidth
-    const offsetY = myCharacter.y - halfCanvasHeight
+    const offset = {
+      x: myCharacter.x - halfCanvasWidth,
+      y: myCharacter.y - halfCanvasHeight,
+    }
 
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
     context.drawImage(
       this.currentMap.offscreenCanvas,
-      offsetX,
-      offsetY,
+      offset.x,
+      offset.y,
       context.canvas.width,
       context.canvas.height,
       0,
@@ -256,69 +343,12 @@ class Game {
       context.canvas.height,
     )
 
-    sortedCharacters.forEach(characterData => {
-      if (!characterData.isLoading) {
-        let sourceOffsetY = (characterData.gender === 'male') ? 0 : characterSpriteSize * 5
-
-        if (characterData.isMoving) {
-          sourceOffsetY += characterSpriteSize * 2
-
-          if ((characterData.previousX === characterData.x) && (characterData.previousY === characterData.y)) {
-            this._stopMoving(characterData)
-          }
-
-          characterData.previousX = characterData.x
-          characterData.previousY = characterData.y
-        }
-
-        let sourceOffsetX = characterSpriteSize * Math.floor((characterData.currentFrame / framesPerFrame) % 10)
-
-        if (characterData.direction === 'left') {
-          sourceOffsetX += 640
-        }
-
-        if (characterData.currentFrame >= (totalFrames * framesPerFrame)) {
-          characterData.currentFrame = 0
-        } else if (Math.random() > 0.5) {
-          characterData.currentFrame += 1
-        }
-
-        let destinationX = null
-        let destinationY = null
-
-        if (characterData.id === this.currentCharacterID) {
-          destinationX = halfCanvasWidth - halfCharacterSpriteSize
-          destinationY = halfCanvasHeight - halfCharacterSpriteSize
-        } else {
-          destinationX = (characterData.x - offsetX) - halfCharacterSpriteSize
-          destinationY = (characterData.y - offsetY) - halfCharacterSpriteSize
-        }
-
-        context.font = '1em serif'
-        context.fillStyle = 'white'
-        context.textAlign = 'center'
-        context.fillText(
-          characterData.name.substring(0, 20),
-          destinationX + halfCharacterSpriteSize,
-          destinationY - 10,
-        )
-        context.drawImage(
-          characterData.sprite.container,
-          sourceOffsetX,
-          sourceOffsetY,
-          characterSpriteSize,
-          characterSpriteSize,
-          destinationX,
-          destinationY,
-          characterSpriteSize,
-          characterSpriteSize,
-        )
-      }
-    })
+    sortedCharacters.forEach(characterData => this._drawCharacter(characterData, offset, context))
   }
 
   _stopMoving = debounce(characterData => {
-    characterData.isMoving = false
+    characterData.previousState = characterData.state
+    characterData.state = 'idle'
   })
 
 
