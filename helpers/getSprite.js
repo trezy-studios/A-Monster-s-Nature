@@ -24,22 +24,20 @@ const getSprite = async (type, name) => {
 
     promises.push(new Promise((resolve, reject) => {
       container.onerror = reject
-
-      container.onload = () => {
-        sprite.isLoaded = true
-        resolve()
-      }
-
-      container.src = `/game/${spritePath}.png`
+      container.onload = resolve
+      container.src = `/game/${spritePath}@1x.png`
     }))
 
     const [spriteDataResult] = await Promise.all(promises)
     const spriteData = await spriteDataResult.json()
 
-    sprites[type] = {
+    sprite = {
       ...sprite,
       ...spriteData,
+      isLoaded: true,
     }
+
+    sprites[type] = sprite
   }
 
   return sprite
