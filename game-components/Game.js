@@ -1,7 +1,12 @@
 /* eslint-disable id-length,no-magic-numbers,no-param-reassign */
 
 // Module imports
-import { debounce } from 'lodash'
+import {
+  Body,
+  Composite,
+  Engine,
+  World,
+} from 'matter-js'
 
 
 
@@ -12,15 +17,8 @@ import {
   firebase,
   firebaseApp,
 } from '../helpers/firebase'
+import { Character } from './Character'
 import { Map } from './Map'
-import getSprite from '../helpers/getSprite'
-
-
-
-
-
-// Local constants
-const moveSpeed = 5
 
 
 
@@ -37,6 +35,8 @@ class Game {
 
   database = null
 
+  engine = null
+
   keysPressed = {}
 
   mainCanvas = null
@@ -45,7 +45,11 @@ class Game {
 
   isReady = false
 
+  scale = 1
+
   unsubscribes = []
+
+  wireframe = true
 
 
 
@@ -102,37 +106,19 @@ class Game {
         switch (change.type) {
           case 'added':
             (async () => {
-              this.characters[characterDoc.id] = {
+              const character = new Character
+
+              await character.initialize({
                 ...characterData,
-                currentFrame: 0,
-                frameDelta: performance.now(),
                 id: characterDoc.id,
-                isLoading: true,
-                previousState: 'idle',
-                sprite: null,
-                state: 'idle',
-              }
+                isCurrentCharacter: this.currentCharacterID === characterDoc.id,
+                engine: this.engine,
+              })
 
-              const promises = []
+              this.characters[characterDoc.id] = character
 
-              promises.push(getSprite('characters', characterData.profession))
-              promises.push(this.database.ref(`game/characters/${characterDoc.id}`).once('value'))
-
-              const [sprite, positionDataSnapshot] = await Promise.all(promises)
-
-              const positionData = positionDataSnapshot.val()
-
-              this.characters[characterDoc.id] = {
-                ...this.characters[characterDoc.id],
-                isLoading: false,
-                previousX: positionData.x,
-                previousY: positionData.y,
-                sprite,
-                x: positionData.x,
-                y: positionData.y,
-              }
+              World.addBody(this.engine.world, character.body)
             })()
-
             break
 
           case 'modified':
@@ -143,6 +129,8 @@ class Game {
             break
 
           case 'removed':
+            World.remove(this.engine.world, originalCharacterData.body)
+            originalCharacterData.teardown()
             delete this.characters[characterDoc.id]
             break
         }
@@ -150,22 +138,15 @@ class Game {
     }))
 
     this.unsubscribes.push(characterRTCollection.on('child_changed', characterDoc => {
-      const originalCharacterData = this.characters[characterDoc.key]
+      const character = this.characters[characterDoc.key]
 
-      if (originalCharacterData) {
+      if (character && (characterDoc.key !== this.currentCharacterID)) {
         const characterData = characterDoc.val()
-        const isMoving = (originalCharacterData.x !== characterData.x) || (originalCharacterData.y !== characterData.y)
 
-        this.characters[characterDoc.key] = {
-          ...this.characters[characterDoc.key],
-          direction: characterData.direction,
-          previousX: originalCharacterData.x,
-          previousY: originalCharacterData.y,
-          previousState: originalCharacterData.state,
-          state: isMoving ? 'walk' : 'idle',
+        character.setPosition({
           x: characterData.x,
           y: characterData.y,
-        }
+        })
       }
     }))
   }
@@ -187,23 +168,60 @@ class Game {
 
       const currentTag = sprite.tags.find(({ name }) => name === characterData.state)
       const spriteChunk = sprite.chunks.find(({ name }) => name === spriteChunkName)
-      const sourceOffsetY = spriteChunk.offset.y + currentTag.offset.y
       const currentFrame = sprite.frames[characterData.currentFrame]
-      const currentFrameIsLastFrame = (characterData.currentFrame === currentTag.frames[currentTag.length - 1])
+      const [firstFrame] = currentTag.frames
+      const lastFrame = currentTag.frames[currentTag.length - 1]
+      const currentFrameIsLastFrame = (characterData.currentFrame === lastFrame)
+      const currentFrameIsFirstFrame = (characterData.currentFrame === firstFrame)
       const stateHasChanged = (characterData.state !== characterData.previousState)
 
       const now = performance.now()
 
-
       if (stateHasChanged) {
-        characterData.currentFrame = currentTag.frames[0]
+        switch (currentTag.direction) {
+          case 'forward':
+          case 'pingpong':
+            characterData.currentFrame = firstFrame
+            break
+          case 'reverse':
+            characterData.currentFrame = lastFrame
+            break
+        }
       } else if ((now - characterData.frameDelta) > currentFrame.duration) {
         characterData.frameDelta = now
 
-        if (currentFrameIsLastFrame) {
-          characterData.currentFrame = currentTag.frames[0]
-        } else if (Math.random() > 0.5) {
-          characterData.currentFrame += 1
+        if (Math.random() > 0.2) {
+          switch (currentTag.direction) {
+            case 'forward':
+              if (currentFrameIsLastFrame) {
+                characterData.currentFrame = firstFrame
+              } else {
+                characterData.currentFrame += 1
+              }
+              break
+
+            case 'reverse':
+              if (currentFrameIsFirstFrame) {
+                characterData.currentFrame = lastFrame
+              } else if (Math.random() > 0.2) {
+                characterData.currentFrame -= 1
+              }
+              break
+
+            case 'pingpong':
+              if (currentFrameIsLastFrame) {
+                characterData.pingpongDirection = 'reverse'
+              } else if (currentFrameIsFirstFrame) {
+                characterData.pingpongDirection = 'forward'
+              }
+
+              if (characterData.pingpongDirection === 'reverse') {
+                characterData.currentFrame -= 1
+              } else {
+                characterData.currentFrame += 1
+              }
+              break
+          }
         }
       }
 
@@ -211,28 +229,29 @@ class Game {
         const characterXHasChanged = characterData.previousX === characterData.x
         const characterYHasChanged = characterData.previousY === characterData.y
 
-        if (characterXHasChanged && characterYHasChanged) {
-          this._stopMoving(characterData)
+        if (characterXHasChanged || characterYHasChanged) {
+          characterData.stopMoving()
         }
-
-        characterData.previousX = characterData.x
-        characterData.previousY = characterData.y
       } else if ((characterData.state === 'idle') && characterData.previousState === 'walk') {
         characterData.previousState = 'idle'
       }
 
       const sourceOffsetX = spriteChunk.offset.x + currentFrame.offset.x
+      const sourceOffsetY = spriteChunk.offset.y + currentTag.offset.y
 
       let destinationX = null
       let destinationY = null
 
       if (characterData.id === this.currentCharacterID) {
-        destinationX = halfCanvasWidth - halfCharacterSpriteWidth
-        destinationY = halfCanvasHeight - halfCharacterSpriteHeight
+        destinationX = halfCanvasWidth
+        destinationY = halfCanvasHeight
       } else {
-        destinationX = (characterData.x - offset.x) - halfCharacterSpriteWidth
-        destinationY = (characterData.y - offset.y) - halfCharacterSpriteHeight
+        destinationX = (characterData.x - offset.x)
+        destinationY = (characterData.y - offset.y)
       }
+
+      destinationX -= halfCharacterSpriteWidth
+      destinationY -= halfCharacterSpriteHeight
 
       context.font = '1em Cormorant, serif'
       context.fillStyle = 'white'
@@ -244,14 +263,14 @@ class Game {
       )
       context.drawImage(
         characterData.sprite.container,
-        sourceOffsetX,
-        sourceOffsetY,
-        characterSpriteWidth,
-        characterSpriteHeight,
+        sourceOffsetX * this.scale,
+        sourceOffsetY * this.scale,
+        characterSpriteWidth * this.scale,
+        characterSpriteHeight * this.scale,
         destinationX,
         destinationY,
-        characterSpriteWidth,
-        characterSpriteHeight,
+        characterSpriteWidth * this.scale,
+        characterSpriteHeight * this.scale,
       )
     }
   }
@@ -275,42 +294,18 @@ class Game {
 
     if (myCharacter) {
       this.isReady = true
+      const velocityMultiplier = 2
+
+      if (!myCharacter.isLoading) {
+        Body.setVelocity(myCharacter.body, {
+          x: (Boolean(this.keysPressed.d) - Boolean(this.keysPressed.a)) * velocityMultiplier,
+          y: (Boolean(this.keysPressed.s) - Boolean(this.keysPressed.w)) * velocityMultiplier,
+        })
+
+        Engine.update(this.engine)
+      }
 
       this._render()
-
-      let newX = myCharacter.x
-      let newY = myCharacter.y
-
-      if (this.keysPressed.w) {
-        newY -= moveSpeed
-      }
-
-      if (this.keysPressed.s) {
-        newY += moveSpeed
-      }
-
-      if (this.keysPressed.a) {
-        newX -= moveSpeed
-      }
-
-      if (this.keysPressed.d) {
-        newX += moveSpeed
-      }
-
-      if ((newY !== myCharacter.y) || (newX !== myCharacter.x)) {
-        const updates = {
-          x: newX,
-          y: newY,
-        }
-
-        if (newX > myCharacter.x) {
-          updates.direction = 'right'
-        } else if (newX < myCharacter.x) {
-          updates.direction = 'left'
-        }
-
-        this.database.ref(`game/characters/${this.currentCharacterID}`).update(updates)
-      }
     }
 
     requestAnimationFrame(this._loop)
@@ -344,12 +339,33 @@ class Game {
     )
 
     sortedCharacters.forEach(characterData => this._drawCharacter(characterData, offset, context))
-  }
 
-  _stopMoving = debounce(characterData => {
-    characterData.previousState = characterData.state
-    characterData.state = 'idle'
-  })
+    if (this.wireframe) {
+      const bodies = Composite.allBodies(this.engine.world)
+
+      bodies.forEach(body => {
+        context.lineWidth = 2
+
+        switch (body.label) {
+          case 'hitbox':
+            context.strokeStyle = 'red'
+            break
+
+          case 'boundary':
+          default:
+            context.strokeStyle = 'purple'
+            break
+        }
+
+        context.strokeRect(
+          body.position.x - offset.x,
+          body.position.y - offset.y,
+          body.bounds.max.x - body.bounds.min.x,
+          body.bounds.max.y - body.bounds.min.y,
+        )
+      })
+    }
+  }
 
 
 
@@ -369,11 +385,17 @@ class Game {
       characterID,
       mapPath,
       mapName,
+      scale = 1,
       start = true,
     } = options
 
     this.currentCharacterID = characterID
     this.mainCanvas = canvasElement
+
+    this.scale = scale
+
+    this.engine = Engine.create()
+    this.engine.world.gravity.y = 0
 
     this._bindEventListeners()
     await this._bindFirebaseListeners()
@@ -381,8 +403,10 @@ class Game {
     this.currentMap = new Map({
       mapPath,
       mapName,
+      scale,
     })
-    this.currentMap.initialize()
+
+    await this.currentMap.initialize()
 
     if (start) {
       this.start()
@@ -390,11 +414,15 @@ class Game {
   }
 
   start = () => {
+    World.add(this.engine.world, this.currentMap.bodies)
+    Engine.run(this.engine)
+
     this._loop()
   }
 
   teardown = () => {
     this.unsubscribes.forEach(unsubscribe => unsubscribe())
+    Object.values(this.characters).forEach(character => character.teardown())
   }
 }
 

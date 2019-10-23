@@ -1,10 +1,10 @@
 /* eslint-disable id-length,no-bitwise,no-magic-numbers,no-param-reassign */
 
 // Module imports
-// import {
-//   Bodies,
-//   Composite,
-// } from 'matter-js'
+import {
+  Bodies,
+  Composite,
+} from 'matter-js'
 // import uuid from 'uuid/v4'
 
 
@@ -34,6 +34,8 @@ class Map {
   options = undefined
 
   points = []
+
+  scale = 1
 
   size = {
     x: 0,
@@ -73,7 +75,7 @@ class Map {
       // const lengthAfterProcessingLastTileset = Object.values(this.tiles).length
       let loopIndex = 0
 
-      const finder = ({ id }) => id === (loopIndex - 1)
+      const finder = ({ id }) => id === loopIndex
 
       while (loopIndex <= tilesetDatum.tilecount) {
         const tileIndex = (loopIndex - 1) + firstgid
@@ -97,22 +99,47 @@ class Map {
     const tile = this.tiles[tileID]
 
     if (tile) {
-      // if (tile.objectgroup) {
-      //   for (const object of tile.objectgroup.objects) {
-      //     const objectX = destination.x + object.x + (object.width / 2)
-      //     const objectY = destination.y + object.y + (object.height / 2)
+      if (tile.objectgroup) {
+        const foo = []
 
-      //     Composite.add(this.bodies, Bodies.rectangle(objectX, objectY, object.width, object.height, {
-      //       label: object.name,
-      //       isStatic: true,
-      //       render: {
-      //         renderProps: [tile.image, tile.x, tile.y, tile.width, tile.height, destination.x, destination.y, tile.width, tile.height],
-      //       },
-      //     }))
-      //   }
-      // }
+        tile.objectgroup.objects.forEach(object => {
+          const objectX = destination.x + object.x
+          const objectY = destination.y + object.y
+
+          const body = Bodies.rectangle(objectX, objectY, object.width, object.height, {
+            label: object.name,
+            isStatic: true,
+            restitution: 0,
+          })
+
+          Composite.add(this.bodies, body)
+
+          foo.push({
+            x: objectX,
+            y: objectY,
+            width: object.width,
+            height: object.height,
+          })
+        })
+      }
 
       context.drawImage(tile.image, tile.x, tile.y, tile.width, tile.height, destination.x, destination.y, tile.width, tile.height)
+
+      // context.font = '14px Cormorant, serif'
+      // context.fillStyle = 'white'
+      // context.textAlign = 'center'
+      // context.strokeStyle = 'blue'
+      // context.lineWidth = 1
+      // context.fillText(
+      //   tileID,
+      //   destination.x + (tile.width / 2),
+      //   destination.y + (tile.height / 2),
+      // )
+      // context.strokeText(
+      //   tileID,
+      //   destination.x + (tile.width / 2),
+      //   destination.y + (tile.height / 2),
+      // )
     }
   }
 
@@ -139,11 +166,9 @@ class Map {
 
     const {
       backgroundcolor,
-      // height,
       layers,
       tileheight,
       tilewidth,
-      // width,
     } = this.mapData
 
     const tileLayers = layers.filter(({ type }) => type === 'tilelayer')
@@ -177,14 +202,9 @@ class Map {
       context.fillRect(0, 0, this.size.x, this.size.y)
     }
 
-    // this.bodies = Composite.create({ label: `map::${this.options.mapName}` })
+    this.bodies = Composite.create({ label: `map::${this.options.mapName}` })
 
     layers.forEach(layer => {
-      // const {
-      //   startx,
-      //   starty,
-      // } = layer
-
       switch (layer.type) {
         case 'objectgroup':
           layer.objects.forEach(object => {
@@ -194,10 +214,11 @@ class Map {
             if (object.point) {
               this.points.push(object)
             } else {
-              // Composite.add(this.bodies, Bodies.rectangle(object.x, object.y, object.width, object.height, {
-              //   label: object.name,
-              //   isStatic: true,
-              // }))
+              Composite.add(this.bodies, Bodies.rectangle(object.x, object.y, object.width, object.height, {
+                label: object.name,
+                isStatic: true,
+                restitution: 0,
+              }))
             }
           })
           break

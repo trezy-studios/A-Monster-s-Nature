@@ -2,5 +2,6 @@
 .next
 .env
 .env.build
+firebase-debug.log
 node_modules/
 logs/

@@ -5,7 +5,7 @@ const sprites = {}
 
 
 
-const getSprite = async (type, name) => {
+const getSprite = async (type, name, scale = 1) => {
   const spritePath = `${type}/${name}`
   let sprite = sprites[spritePath]
 
@@ -25,7 +25,7 @@ const getSprite = async (type, name) => {
     promises.push(new Promise((resolve, reject) => {
       container.onerror = reject
       container.onload = resolve
-      container.src = `/game/${spritePath}@1x.png`
+      container.src = `/game/${spritePath}@${scale}x.png`
     }))
 
     const [spriteDataResult] = await Promise.all(promises)
