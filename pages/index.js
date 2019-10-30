@@ -17,25 +17,8 @@ import PageWrapper from '../components/PageWrapper'
 const Home = () => (
   <PageWrapper
     description="Blorp"
-    title="A Monster's Nature">
+    title="Home">
     <div className="hero">
-      <div className="background-wrapper">
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          autoPlay
-          loop>
-          <source
-            src="/media/cover-videos/Forest-Lullaby.webm"
-            type="video/webm" />
-
-          <source
-            src="/media/cover-videos/Forest-Lullaby.mp4"
-            type="video/mp4" />
-
-          Sorry, your browser doesn't support embedded videos.
-        </video>
-      </div>
-
       <h2>Join the World of Kolo Tera</h2>
 
       <p><em>A Monster’s Nature</em> is about a world inhabited by the intelligent ancestries (humans, elves, dwarves, orcs, birdfolk (tbd), catfolk (tbd), et al), who fight alongside their tamed companions to defeat the evils that inhabit their planet.</p>
