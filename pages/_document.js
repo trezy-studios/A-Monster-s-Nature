@@ -64,18 +64,14 @@ const cspHeaderKeys = [
 
 class Document extends NextDocument {
   static async getInitialProps (ctx) {
-    const allowances = {
-      'data:': ['font'],
-      "'unsafe-eval'": false,
-      "'unsafe-inline'": ['style'],
-      "'self'": true,
-      "'strict-dynamic'": ['script'],
-    }
     const initialProps = await NextDocument.getInitialProps(ctx)
     const isDev = ctx.isServer
     const nonce = uuid()
-    const whitelist = {
-      connect: [
+
+    const cspDirectives = {
+      baseUri: ["'none'"],
+      connectSrc: [
+        ...(isDev ? ['webpack://*'] : []),
         "'self'",
         'https://firestore.googleapis.com',
         'https://securetoken.googleapis.com',
@@ -83,72 +79,37 @@ class Document extends NextDocument {
         'https://api.themoviedb.org',
         'wss://*.firebaseio.com',
       ],
-      default: [
-        'https://trezy-core.firebaseapp.com',
+      defaultSrc: [
+        "'self'",
+        'https://amonstersnature.firebaseapp.com',
         'https://*.firebaseio.com',
       ],
-      font: 'https://fonts.gstatic.com',
-      img: [
+      fontSrc: [
         "'self'",
-        'https://image.tmdb.org',
+        'data:',
+        'https://fonts.gstatic.com',
       ],
-      style: [
-        "'self'",
-        'https://fonts.googleapis.com',
-      ],
-      media: [
+      imgSrc: [
         "'self'",
       ],
-      object: [],
-      script: [
+      mediaSrc: [
         "'self'",
       ],
-    }
-
-    let baseUri = null
-
-    if (!baseUri) {
-      baseUri = ["'none'"]
-    }
-
-    if (!Array.isArray(baseUri)) {
-      baseUri = [baseUri]
-    }
-
-    const cspDirectives = {
-      baseUri,
-      connectSrc: [
-        ...(isDev ? ['webpack://*'] : []),
+      objectSrc: [
+        "'self'",
       ],
       scriptSrc: [
+        "'self'",
+        "'strict-dynamic'",
         `'nonce-${nonce}'`,
         ...(isDev ? ["'unsafe-eval'"] : []),
       ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        'https://fonts.googleapis.com',
+      ],
     }
-
-    Object.entries(whitelist).forEach(([srcType, sources]) => {
-      const initialSources = cspDirectives[`${srcType}Src`] || []
-      const normalizedSources = Array.isArray(sources) ? sources : [sources]
-
-      cspDirectives[`${srcType}Src`] = [
-        ...initialSources,
-        ...normalizedSources,
-      ]
-    })
-
-    Object.entries(allowances).forEach(([allowance, value]) => {
-      if ((typeof value === 'boolean') && value) {
-        cspDirectives.defaultSrc.unshift(allowance)
-      } else if (Array.isArray(value)) {
-        value.forEach(srcType => {
-          if (!cspDirectives[`${srcType}Src`]) {
-            cspDirectives[`${srcType}Src`] = []
-          }
-
-          cspDirectives[`${srcType}Src`].unshift(allowance)
-        })
-      }
-    })
 
     const policyString = buildCSP({ directives: cspDirectives })
     cspHeaderKeys.forEach(key => ctx.res.setHeader(key, policyString))
